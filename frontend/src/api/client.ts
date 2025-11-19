@@ -49,6 +49,26 @@ export const simulationApi = {
   },
 
   /**
+   * Save configuration as JSON file
+   */
+  saveConfig: async (config: PresetResponse): Promise<Blob> => {
+    const response = await apiClient.post('/config/save', config, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  /**
+   * Save simulation results as CSV file
+   */
+  saveResults: async (request: SimulationRequest): Promise<Blob> => {
+    const response = await apiClient.post('/results/save', request, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  /**
    * Health check
    */
   healthCheck: async (): Promise<{ status: string }> => {

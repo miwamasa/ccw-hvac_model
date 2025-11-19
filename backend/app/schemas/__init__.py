@@ -87,3 +87,11 @@ class PresetResponse(BaseModel):
     floor_spec: FloorSpecSchema
     equipment_spec: EquipmentSpecSchema
     monthly_conditions: List[MonthlyConditionSchema]
+
+
+class ConfigSaveRequest(BaseModel):
+    name: str
+    description: str
+    floor_spec: FloorSpecSchema
+    equipment_spec: EquipmentSpecSchema
+    monthly_conditions: List[MonthlyConditionSchema]

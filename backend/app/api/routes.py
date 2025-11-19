@@ -2,10 +2,12 @@
 API routes for building energy simulation
 """
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from app.schemas import (
     SimulationRequest,
     SimulationResponse,
     PresetResponse,
+    ConfigSaveRequest,
     FloorSpecSchema,
     EquipmentSpecSchema,
     MonthlyConditionSchema,
@@ -18,6 +20,9 @@ from app.models.building_energy_model import (
 )
 from app.models.presets import get_modern_office_preset, get_old_office_preset
 from typing import List
+import json
+import io
+from datetime import datetime
 
 router = APIRouter()
 
@@ -126,3 +131,71 @@ async def list_presets():
             }
         ]
     }
+
+
+@router.post("/config/save")
+async def save_config(request: ConfigSaveRequest):
+    """Save configuration as JSON"""
+    try:
+        # Create config dict
+        config = {
+            "name": request.name,
+            "description": request.description,
+            "floor_spec": request.floor_spec.model_dump(),
+            "equipment_spec": request.equipment_spec.model_dump(),
+            "monthly_conditions": [cond.model_dump() for cond in request.monthly_conditions]
+        }
+
+        # Create JSON string
+        config_json = json.dumps(config, ensure_ascii=False, indent=2)
+
+        # Create filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{request.name}_{timestamp}.json"
+
+        # Return as downloadable file
+        return StreamingResponse(
+            io.BytesIO(config_json.encode('utf-8')),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/results/save")
+async def save_results(request: SimulationRequest):
+    """Run simulation and save results as CSV"""
+    try:
+        # Convert schemas to dataclasses
+        floor, equipment, conditions = convert_schema_to_dataclass(
+            request.floor_spec,
+            request.equipment_spec,
+            request.monthly_conditions
+        )
+
+        # Create model and run simulation
+        model = BuildingEnergyModel(floor, equipment, conditions)
+        results_df = model.simulate_year()
+
+        # Convert to CSV
+        csv_buffer = io.StringIO()
+        results_df.to_csv(csv_buffer, index=False, encoding='utf-8-sig')
+        csv_content = csv_buffer.getvalue()
+
+        # Create filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"simulation_results_{timestamp}.csv"
+
+        # Return as downloadable file
+        return StreamingResponse(
+            io.BytesIO(csv_content.encode('utf-8-sig')),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
