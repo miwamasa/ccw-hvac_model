@@ -8,6 +8,11 @@ from app.schemas import (
     SimulationResponse,
     PresetResponse,
     ConfigSaveRequest,
+    ComparisonRequest,
+    ComparisonResponse,
+    CalibrationRequest,
+    CalibrationResponse,
+    CalibrationResult,
     FloorSpecSchema,
     EquipmentSpecSchema,
     MonthlyConditionSchema,
@@ -19,6 +24,12 @@ from app.models.building_energy_model import (
     MonthlyCondition,
 )
 from app.models.presets import get_modern_office_preset, get_old_office_preset
+from app.calibration import (
+    calculate_metrics,
+    extract_comparison_values,
+    grid_search_calibration,
+    optimize_calibration,
+)
 from typing import List
 import json
 import io
@@ -197,5 +208,92 @@ async def save_results(request: SimulationRequest):
                 "Content-Disposition": f"attachment; filename={filename}"
             }
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/compare", response_model=ComparisonResponse)
+async def compare_with_actual(request: ComparisonRequest):
+    """
+    Compare simulation results with actual data
+    """
+    try:
+        # Convert schemas to dataclasses
+        floor, equipment, conditions = convert_schema_to_dataclass(
+            request.floor_spec,
+            request.equipment_spec,
+            request.monthly_conditions
+        )
+
+        # Run simulation
+        model = BuildingEnergyModel(floor, equipment, conditions)
+        results_df = model.simulate_year()
+
+        # Extract comparison values
+        simulated, actual = extract_comparison_values(
+            results_df, request.actual_data, request.comparison_target
+        )
+
+        # Calculate metrics
+        metrics = calculate_metrics(simulated, actual)
+
+        return ComparisonResponse(
+            simulation_results=results_df.to_dict('records'),
+            actual_data=request.actual_data,
+            metrics=metrics,
+            comparison_target=request.comparison_target,
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/calibrate", response_model=CalibrationResponse)
+async def calibrate_parameters(request: CalibrationRequest):
+    """
+    Calibrate parameters to match actual data
+    """
+    try:
+        # Convert schemas to dataclasses
+        floor, equipment, conditions = convert_schema_to_dataclass(
+            request.floor_spec,
+            request.equipment_spec,
+            request.monthly_conditions
+        )
+
+        # Choose calibration method
+        if request.method == "grid":
+            results = grid_search_calibration(
+                floor,
+                equipment,
+                conditions,
+                request.actual_data,
+                request.comparison_target,
+                request.parameter_ranges,
+            )
+        elif request.method == "optimize":
+            results = optimize_calibration(
+                floor,
+                equipment,
+                conditions,
+                request.actual_data,
+                request.comparison_target,
+                request.parameter_ranges,
+            )
+        else:
+            raise ValueError(f"Unknown calibration method: {request.method}")
+
+        # Convert results to CalibrationResult objects
+        calibration_results = [
+            CalibrationResult(**result) for result in results
+        ]
+
+        return CalibrationResponse(
+            best_result=calibration_results[0],
+            all_results=calibration_results,
+            method=request.method,
+            iterations=len(calibration_results),
+        )
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

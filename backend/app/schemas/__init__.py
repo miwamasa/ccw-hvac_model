@@ -95,3 +95,73 @@ class ConfigSaveRequest(BaseModel):
     floor_spec: FloorSpecSchema
     equipment_spec: EquipmentSpecSchema
     monthly_conditions: List[MonthlyConditionSchema]
+
+
+class ActualDataSchema(BaseModel):
+    """Actual monthly energy consumption data"""
+    month: int
+    central_total_kWh: Optional[float] = None
+    local_total_kWh: Optional[float] = None
+    total_kWh: Optional[float] = None
+
+
+class ComparisonMetrics(BaseModel):
+    """Metrics for comparing simulation vs actual data"""
+    rmse: float  # Root Mean Square Error
+    mae: float  # Mean Absolute Error
+    mape: float  # Mean Absolute Percentage Error
+    r_squared: float  # Coefficient of determination
+    max_error: float  # Maximum absolute error
+    max_error_month: int  # Month with maximum error
+
+
+class ComparisonRequest(BaseModel):
+    """Request to compare simulation with actual data"""
+    floor_spec: FloorSpecSchema
+    equipment_spec: EquipmentSpecSchema
+    monthly_conditions: List[MonthlyConditionSchema]
+    actual_data: List[ActualDataSchema]
+    comparison_target: str = "total_kWh"  # central_total_kWh, local_total_kWh, or total_kWh
+
+
+class ComparisonResponse(BaseModel):
+    """Response with comparison results"""
+    simulation_results: List[dict]
+    actual_data: List[ActualDataSchema]
+    metrics: ComparisonMetrics
+    comparison_target: str
+
+
+class ParameterRange(BaseModel):
+    """Range specification for a parameter to calibrate"""
+    parameter_name: str  # e.g., "floor_spec.wall_u_value"
+    min_value: float
+    max_value: float
+    step: Optional[float] = None  # For grid search
+    num_steps: int = 10  # Number of steps for grid search
+
+
+class CalibrationRequest(BaseModel):
+    """Request for parameter calibration"""
+    floor_spec: FloorSpecSchema
+    equipment_spec: EquipmentSpecSchema
+    monthly_conditions: List[MonthlyConditionSchema]
+    actual_data: List[ActualDataSchema]
+    comparison_target: str = "total_kWh"
+    parameter_ranges: List[ParameterRange]
+    method: str = "grid"  # "grid" for survey, "optimize" for statistical
+
+
+class CalibrationResult(BaseModel):
+    """Single calibration result"""
+    parameters: dict
+    metrics: ComparisonMetrics
+    simulation_results: Optional[List[dict]] = None
+
+
+class CalibrationResponse(BaseModel):
+    """Response with calibration results"""
+    best_result: CalibrationResult
+    all_results: List[CalibrationResult]
+    method: str
+    iterations: int

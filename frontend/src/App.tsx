@@ -6,15 +6,22 @@ import type {
   PresetResponse,
   FloorSpec,
   EquipmentSpec,
-  MonthlyCondition
+  MonthlyCondition,
+  ActualData,
+  ComparisonResponse,
+  ParameterRange,
+  CalibrationResponse,
 } from './types';
 import ResultsChart from './components/ResultsChart';
 import PresetSelector from './components/PresetSelector';
 import ConfigForm from './components/ConfigForm';
 import MonthlyConditionsTable from './components/MonthlyConditionsTable';
-import { Building2, Play, Loader2, Save, FileDown, Settings, BarChart3, Upload } from 'lucide-react';
+import ActualDataTable from './components/ActualDataTable';
+import ComparisonChart from './components/ComparisonChart';
+import ParameterSelector from './components/ParameterSelector';
+import { Building2, Play, Loader2, Save, FileDown, Settings, BarChart3, Upload, Target } from 'lucide-react';
 
-type TabType = 'config' | 'simulate' | 'results';
+type TabType = 'config' | 'simulate' | 'results' | 'calibration';
 
 function App() {
   const [presets, setPresets] = useState<PresetInfo[]>([]);
@@ -23,6 +30,17 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SimulationResponse | null>(null);
   const [error, setError] = useState<string>('');
+
+  // Calibration state
+  const [actualData, setActualData] = useState<ActualData[]>(
+    Array.from({ length: 12 }, (_, i) => ({ month: i + 1 }))
+  );
+  const [comparisonTarget, setComparisonTarget] = useState<string>('total_kWh');
+  const [comparisonResult, setComparisonResult] = useState<ComparisonResponse | null>(null);
+  const [parameterRanges, setParameterRanges] = useState<ParameterRange[]>([]);
+  const [calibrationMethod, setCalibrationMethod] = useState<'grid' | 'optimize'>('grid');
+  const [calibrationResult, setCalibrationResult] = useState<CalibrationResponse | null>(null);
+  const [calibrating, setCalibrating] = useState(false);
 
   // Configuration state
   const [configName, setConfigName] = useState<string>('カスタム設定');
@@ -199,6 +217,107 @@ function App() {
     event.target.value = '';
   };
 
+  const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+
+      // Skip header line
+      const dataLines = lines.slice(1);
+      const newData: ActualData[] = [];
+
+      for (const line of dataLines) {
+        const [month, central, local, total] = line.split(',').map(v => v.trim());
+        newData.push({
+          month: parseInt(month),
+          central_total_kWh: central && central !== '' ? parseFloat(central) : undefined,
+          local_total_kWh: local && local !== '' ? parseFloat(local) : undefined,
+          total_kWh: total && total !== '' ? parseFloat(total) : undefined,
+        });
+      }
+
+      setActualData(newData);
+      setError('');
+    } catch (err) {
+      setError('CSVファイルの読み込みに失敗しました');
+      console.error(err);
+    }
+
+    // Reset file input
+    event.target.value = '';
+  };
+
+  const handleCompare = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await simulationApi.compare({
+        floor_spec: floorSpec,
+        equipment_spec: equipmentSpec,
+        monthly_conditions: monthlyConditions,
+        actual_data: actualData,
+        comparison_target: comparisonTarget,
+      });
+
+      setComparisonResult(response);
+    } catch (err) {
+      setError('比較の実行に失敗しました');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCalibrate = async () => {
+    if (parameterRanges.length === 0) {
+      setError('調整するパラメータを選択してください');
+      return;
+    }
+
+    try {
+      setCalibrating(true);
+      setError('');
+
+      const response = await simulationApi.calibrate({
+        floor_spec: floorSpec,
+        equipment_spec: equipmentSpec,
+        monthly_conditions: monthlyConditions,
+        actual_data: actualData,
+        comparison_target: comparisonTarget,
+        parameter_ranges: parameterRanges,
+        method: calibrationMethod,
+      });
+
+      setCalibrationResult(response);
+
+      // Apply best parameters
+      const bestParams = response.best_result.parameters;
+      const newFloorSpec = { ...floorSpec };
+      const newEquipmentSpec = { ...equipmentSpec };
+
+      for (const [key, value] of Object.entries(bestParams)) {
+        const [spec, field] = key.split('.');
+        if (spec === 'floor_spec') {
+          (newFloorSpec as any)[field] = value;
+        } else if (spec === 'equipment_spec') {
+          (newEquipmentSpec as any)[field] = value;
+        }
+      }
+
+      setFloorSpec(newFloorSpec);
+      setEquipmentSpec(newEquipmentSpec);
+    } catch (err) {
+      setError('キャリブレーションの実行に失敗しました');
+      console.error(err);
+    } finally {
+      setCalibrating(false);
+    }
+  };
+
   const handleMonthlyConditionChange = (
     index: number,
     field: keyof MonthlyCondition,
@@ -310,6 +429,17 @@ function App() {
                 >
                   <BarChart3 className="w-5 h-5" />
                   結果
+                </button>
+                <button
+                  onClick={() => setActiveTab('calibration')}
+                  className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'calibration'
+                      ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <Target className="w-5 h-5" />
+                  キャリブレーション
                 </button>
               </nav>
             </div>
@@ -434,6 +564,168 @@ function App() {
               {activeTab === 'results' && !results && (
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   まずシミュレーションを実行してください
+                </div>
+              )}
+
+              {/* Calibration Tab */}
+              {activeTab === 'calibration' && (
+                <div className="space-y-8">
+                  {/* Actual Data Input */}
+                  <ActualDataTable
+                    actualData={actualData}
+                    onChange={setActualData}
+                    onCSVImport={handleCSVImport}
+                  />
+
+                  {/* Comparison Target Selection */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+                      比較対象
+                    </h3>
+                    <select
+                      value={comparisonTarget}
+                      onChange={(e) => setComparisonTarget(e.target.value)}
+                      className="w-full md:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="total_kWh">合計消費電力</option>
+                      <option value="central_total_kWh">全館空調消費電力</option>
+                      <option value="local_total_kWh">個別空調消費電力</option>
+                    </select>
+                  </div>
+
+                  {/* Compare Button */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleCompare}
+                      disabled={loading}
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <BarChart3 className="w-5 h-5" />}
+                      実測と比較
+                    </button>
+                  </div>
+
+                  {/* Comparison Results */}
+                  {comparisonResult && (
+                    <ComparisonChart
+                      simulationResults={comparisonResult.simulation_results}
+                      actualData={comparisonResult.actual_data}
+                      comparisonTarget={comparisonResult.comparison_target}
+                      metrics={comparisonResult.metrics}
+                    />
+                  )}
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-300 dark:border-gray-600 my-8"></div>
+
+                  {/* Parameter Selection */}
+                  <ParameterSelector
+                    parameterRanges={parameterRanges}
+                    onChange={setParameterRanges}
+                  />
+
+                  {/* Calibration Method Selection */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+                      キャリブレーション方法
+                    </h3>
+                    <div className="flex gap-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          value="grid"
+                          checked={calibrationMethod === 'grid'}
+                          onChange={(e) => setCalibrationMethod(e.target.value as 'grid' | 'optimize')}
+                          className="mr-2"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">
+                          グリッドサーチ（パラメータサーベイ）
+                        </span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          value="optimize"
+                          checked={calibrationMethod === 'optimize'}
+                          onChange={(e) => setCalibrationMethod(e.target.value as 'grid' | 'optimize')}
+                          className="mr-2"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">
+                          統計的最適化
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Calibrate Button */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleCalibrate}
+                      disabled={calibrating || parameterRanges.length === 0}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                      {calibrating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Target className="w-5 h-5" />}
+                      キャリブレーション実行
+                    </button>
+                  </div>
+
+                  {/* Calibration Results */}
+                  {calibrationResult && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                        キャリブレーション結果
+                      </h3>
+
+                      {/* Best Parameters */}
+                      <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <h4 className="font-semibold text-green-800 dark:text-green-300 mb-3">
+                          最適パラメータ（自動適用済み）
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {Object.entries(calibrationResult.best_result.parameters).map(([key, value]) => (
+                            <div key={key} className="text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">{key}:</span>{' '}
+                              <span className="font-semibold text-gray-900 dark:text-white">
+                                {typeof value === 'number' ? value.toFixed(3) : value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Metrics */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 dark:text-gray-400">RMSE</div>
+                          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {calibrationResult.best_result.metrics.rmse.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 dark:text-gray-400">MAE</div>
+                          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {calibrationResult.best_result.metrics.mae.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 dark:text-gray-400">MAPE</div>
+                          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {calibrationResult.best_result.metrics.mape.toFixed(2)}%
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 dark:text-gray-400">R²</div>
+                          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {calibrationResult.best_result.metrics.r_squared.toFixed(3)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        実行回数: {calibrationResult.iterations} / 方法: {calibrationResult.method === 'grid' ? 'グリッドサーチ' : '統計的最適化'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
