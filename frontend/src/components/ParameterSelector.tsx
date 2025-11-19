@@ -8,6 +8,7 @@ interface ParameterSelectorProps {
 
 // Available parameters for calibration
 const AVAILABLE_PARAMETERS = [
+  // Building and Equipment Parameters
   { name: 'floor_spec.wall_u_value', label: '壁U値', unit: 'W/m²K', defaultMin: 0.1, defaultMax: 1.0 },
   { name: 'floor_spec.window_u_value', label: '窓U値', unit: 'W/m²K', defaultMin: 1.0, defaultMax: 6.0 },
   { name: 'floor_spec.solar_heat_gain_coef', label: '日射熱取得係数', unit: '', defaultMin: 0.1, defaultMax: 0.9 },
@@ -15,6 +16,21 @@ const AVAILABLE_PARAMETERS = [
   { name: 'equipment_spec.oa_equipment_power_density', label: 'OA機器電力密度', unit: 'W/m²', defaultMin: 5.0, defaultMax: 30.0 },
   { name: 'equipment_spec.central_chiller_cop', label: '熱源COP', unit: '', defaultMin: 2.0, defaultMax: 6.0 },
   { name: 'equipment_spec.local_ac_cop', label: '個別空調COP', unit: '', defaultMin: 2.0, defaultMax: 5.0 },
+
+  // Seasonal Parameters - Winter (11-3月)
+  { name: 'winter_indoor_temp_setpoint', label: '冬季 室温設定', unit: '°C', defaultMin: 18.0, defaultMax: 24.0 },
+  { name: 'winter_indoor_humidity_setpoint', label: '冬季 室内湿度設定', unit: '%', defaultMin: 30.0, defaultMax: 60.0 },
+  { name: 'winter_supply_air_temp', label: '冬季 給気温度設定', unit: '°C', defaultMin: 15.0, defaultMax: 25.0 },
+
+  // Seasonal Parameters - Summer (7-9月)
+  { name: 'summer_indoor_temp_setpoint', label: '夏季 室温設定', unit: '°C', defaultMin: 22.0, defaultMax: 28.0 },
+  { name: 'summer_indoor_humidity_setpoint', label: '夏季 室内湿度設定', unit: '%', defaultMin: 40.0, defaultMax: 70.0 },
+  { name: 'summer_supply_air_temp', label: '夏季 給気温度設定', unit: '°C', defaultMin: 12.0, defaultMax: 20.0 },
+
+  // Seasonal Parameters - Mid-season (4-6, 10月)
+  { name: 'mid_indoor_temp_setpoint', label: '中間期 室温設定', unit: '°C', defaultMin: 20.0, defaultMax: 26.0 },
+  { name: 'mid_indoor_humidity_setpoint', label: '中間期 室内湿度設定', unit: '%', defaultMin: 35.0, defaultMax: 65.0 },
+  { name: 'mid_supply_air_temp', label: '中間期 給気温度設定', unit: '°C', defaultMin: 14.0, defaultMax: 22.0 },
 ];
 
 export default function ParameterSelector({

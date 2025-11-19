@@ -298,18 +298,50 @@ function App() {
       const bestParams = response.best_result.parameters;
       const newFloorSpec = { ...floorSpec };
       const newEquipmentSpec = { ...equipmentSpec };
+      const newMonthlyConditions = [...monthlyConditions];
+
+      // Define seasonal month mappings
+      const winterMonths = [11, 12, 1, 2, 3];
+      const summerMonths = [7, 8, 9];
+      const midMonths = [4, 5, 6, 10];
 
       for (const [key, value] of Object.entries(bestParams)) {
         const [spec, field] = key.split('.');
+
+        // Handle building/equipment specs
         if (spec === 'floor_spec') {
           (newFloorSpec as any)[field] = value;
         } else if (spec === 'equipment_spec') {
           (newEquipmentSpec as any)[field] = value;
         }
+        // Handle seasonal parameters
+        else if (key.startsWith('winter_')) {
+          const fieldName = key.replace('winter_', '') as keyof MonthlyCondition;
+          newMonthlyConditions.forEach((cond) => {
+            if (winterMonths.includes(cond.month)) {
+              (cond as any)[fieldName] = value;
+            }
+          });
+        } else if (key.startsWith('summer_')) {
+          const fieldName = key.replace('summer_', '') as keyof MonthlyCondition;
+          newMonthlyConditions.forEach((cond) => {
+            if (summerMonths.includes(cond.month)) {
+              (cond as any)[fieldName] = value;
+            }
+          });
+        } else if (key.startsWith('mid_')) {
+          const fieldName = key.replace('mid_', '') as keyof MonthlyCondition;
+          newMonthlyConditions.forEach((cond) => {
+            if (midMonths.includes(cond.month)) {
+              (cond as any)[fieldName] = value;
+            }
+          });
+        }
       }
 
       setFloorSpec(newFloorSpec);
       setEquipmentSpec(newEquipmentSpec);
+      setMonthlyConditions(newMonthlyConditions);
     } catch (err) {
       setError('キャリブレーションの実行に失敗しました');
       console.error(err);
