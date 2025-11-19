@@ -96,6 +96,7 @@ def run_simulation_with_params(
         equipment_spec: Equipment specification
         monthly_conditions: Monthly conditions
         parameters: Dictionary of parameters to modify (e.g., {"floor_spec.wall_u_value": 0.5})
+                   Also supports seasonal parameters like "winter_indoor_temp", "summer_indoor_temp", etc.
 
     Returns:
         DataFrame with simulation results
@@ -103,17 +104,42 @@ def run_simulation_with_params(
     # Deep copy to avoid modifying originals
     floor = deepcopy(floor_spec)
     equipment = deepcopy(equipment_spec)
+    conditions = deepcopy(monthly_conditions)
+
+    # Define seasonal month mappings
+    winter_months = [11, 12, 1, 2, 3]  # 冬季
+    summer_months = [7, 8, 9]  # 夏季
+    mid_months = [4, 5, 6, 10]  # 中間期
 
     # Apply parameter modifications
     for param_name, value in parameters.items():
         parts = param_name.split('.')
+
+        # Handle building/equipment specs
         if parts[0] == 'floor_spec':
             setattr(floor, parts[1], value)
         elif parts[0] == 'equipment_spec':
             setattr(equipment, parts[1], value)
 
+        # Handle seasonal monthly condition parameters
+        elif param_name.startswith('winter_'):
+            field_name = param_name.replace('winter_', '')
+            for cond in conditions:
+                if cond.month in winter_months:
+                    setattr(cond, field_name, value)
+        elif param_name.startswith('summer_'):
+            field_name = param_name.replace('summer_', '')
+            for cond in conditions:
+                if cond.month in summer_months:
+                    setattr(cond, field_name, value)
+        elif param_name.startswith('mid_'):
+            field_name = param_name.replace('mid_', '')
+            for cond in conditions:
+                if cond.month in mid_months:
+                    setattr(cond, field_name, value)
+
     # Run simulation
-    model = BuildingEnergyModel(floor, equipment, monthly_conditions)
+    model = BuildingEnergyModel(floor, equipment, conditions)
     results_df = model.simulate_year()
 
     return results_df
