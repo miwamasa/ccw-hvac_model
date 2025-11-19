@@ -644,6 +644,10 @@ function App() {
                       actualData={comparisonResult.actual_data}
                       comparisonTarget={comparisonResult.comparison_target}
                       metrics={comparisonResult.metrics}
+                      calibrationResults={
+                        calibrationResult?.best_result.simulation_results as any
+                      }
+                      calibrationMetrics={calibrationResult?.best_result.metrics}
                     />
                   )}
 
