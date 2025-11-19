@@ -73,10 +73,13 @@ async def simulate(request: SimulationRequest):
         results = results_df.to_dict('records')
 
         # Calculate summary statistics
+        # Get total operation hours from input conditions
+        total_operation_hours = sum(cond.operation_hours for cond in conditions)
+
         summary = {
             "annual_central_total_kWh": float(results_df['central_total_kWh'].sum()),
             "annual_local_total_kWh": float(results_df['local_total_kWh'].sum()),
-            "annual_total_load_kWh": float(results_df['total_load_kW'].sum() * results_df['operating_hours'].sum()),
+            "annual_total_load_kWh": float(results_df['total_load_kW'].sum() * total_operation_hours / 12),
             "average_monthly_load_kW": float(results_df['total_load_kW'].mean()),
         }
 

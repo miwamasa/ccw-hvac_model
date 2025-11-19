@@ -4,32 +4,31 @@ export interface FloorSpec {
   wall_u_value: number;
   window_area: number;
   window_u_value: number;
-  shgc: number;
+  solar_heat_gain_coef: number;
 }
 
 export interface EquipmentSpec {
   lighting_power_density: number;
   oa_equipment_power_density: number;
   central_ahu_capacity: number;
-  central_fan_power: number;
+  central_ahu_fan_power: number;
   central_chiller_capacity: number;
   central_chiller_cop: number;
   local_ac_capacity: number;
   local_ac_cop: number;
-  local_fan_power: number;
+  local_ac_fan_power: number;
 }
 
 export interface MonthlyCondition {
   month: number;
   outdoor_temp: number;
   outdoor_humidity: number;
-  indoor_temp: number;
-  indoor_humidity: number;
+  indoor_temp_setpoint: number;
+  indoor_humidity_setpoint: number;
   supply_air_temp: number;
   occupancy: number;
-  office_usage_rate: number;
-  operating_hours: number;
-  solar_radiation: number;
+  occupancy_rate: number;
+  operation_hours: number;
 }
 
 export interface SimulationRequest {
@@ -42,30 +41,30 @@ export interface SimulationResult {
   month: number;
   outdoor_temp: number;
   indoor_temp: number;
-  outdoor_humidity: number;
-  indoor_humidity: number;
-  supply_air_temp: number;
   occupancy: number;
-  office_usage_rate: number;
-  operating_hours: number;
-  solar_radiation: number;
-  sensible_wall_kW: number;
-  sensible_window_kW: number;
-  sensible_solar_kW: number;
-  sensible_lighting_kW: number;
-  sensible_oa_equipment_kW: number;
-  sensible_person_kW: number;
-  latent_person_kW: number;
-  latent_outdoor_air_kW: number;
-  total_sensible_kW: number;
-  total_latent_kW: number;
+  occupancy_rate: number;
+  load_wall_kW: number;
+  load_window_kW: number;
+  load_solar_kW: number;
+  load_lighting_kW: number;
+  load_oa_equipment_kW: number;
+  load_person_sensible_kW: number;
+  load_person_latent_kW: number;
+  load_outdoor_air_latent_kW: number;
+  sensible_load_kW: number;
+  latent_load_kW: number;
   total_load_kW: number;
-  central_fan_kWh: number;
+  shf: number;
+  central_ahu_fan_kWh: number;
   central_chiller_kWh: number;
   central_total_kWh: number;
   local_fan_kWh: number;
   local_compressor_kWh: number;
   local_total_kWh: number;
+  lighting_kWh: number;
+  oa_equipment_kWh: number;
+  outdoor_enthalpy: number;
+  indoor_enthalpy: number;
 }
 
 export interface SimulationResponse {

@@ -1,8 +1,8 @@
 """
 Pydantic schemas for API request/response validation
 """
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, ConfigDict
+from typing import List, Optional, Any
 
 
 class FloorSpecSchema(BaseModel):
@@ -45,37 +45,39 @@ class SimulationRequest(BaseModel):
 
 
 class SimulationResult(BaseModel):
+    model_config = ConfigDict(extra='allow')  # Allow extra fields from pandas DataFrame
+
     month: int
     outdoor_temp: float
     indoor_temp: float
-    outdoor_humidity: float
-    indoor_humidity: float
-    supply_air_temp: float
     occupancy: int
-    office_usage_rate: float
-    operating_hours: float
-    solar_radiation: float
-    sensible_wall_kW: float
-    sensible_window_kW: float
-    sensible_solar_kW: float
-    sensible_lighting_kW: float
-    sensible_oa_equipment_kW: float
-    sensible_person_kW: float
-    latent_person_kW: float
-    latent_outdoor_air_kW: float
-    total_sensible_kW: float
-    total_latent_kW: float
+    occupancy_rate: float
+    load_wall_kW: float
+    load_window_kW: float
+    load_solar_kW: float
+    load_lighting_kW: float
+    load_oa_equipment_kW: float
+    load_person_sensible_kW: float
+    load_person_latent_kW: float
+    load_outdoor_air_latent_kW: float
+    sensible_load_kW: float
+    latent_load_kW: float
     total_load_kW: float
-    central_fan_kWh: float
+    shf: float
+    central_ahu_fan_kWh: float
     central_chiller_kWh: float
     central_total_kWh: float
     local_fan_kWh: float
     local_compressor_kWh: float
     local_total_kWh: float
+    lighting_kWh: float
+    oa_equipment_kWh: float
+    outdoor_enthalpy: float
+    indoor_enthalpy: float
 
 
 class SimulationResponse(BaseModel):
-    results: List[SimulationResult]
+    results: List[dict]  # Use dict to handle any DataFrame columns
     summary: dict
 
 
