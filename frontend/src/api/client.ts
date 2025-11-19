@@ -4,6 +4,10 @@ import type {
   SimulationResponse,
   PresetResponse,
   PresetInfo,
+  ComparisonRequest,
+  ComparisonResponse,
+  CalibrationRequest,
+  CalibrationResponse,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
@@ -65,6 +69,22 @@ export const simulationApi = {
     const response = await apiClient.post('/results/save', request, {
       responseType: 'blob',
     });
+    return response.data;
+  },
+
+  /**
+   * Compare simulation with actual data
+   */
+  compare: async (request: ComparisonRequest): Promise<ComparisonResponse> => {
+    const response = await apiClient.post<ComparisonResponse>('/compare', request);
+    return response.data;
+  },
+
+  /**
+   * Calibrate parameters to match actual data
+   */
+  calibrate: async (request: CalibrationRequest): Promise<CalibrationResponse> => {
+    const response = await apiClient.post<CalibrationResponse>('/calibrate', request);
     return response.data;
   },
 

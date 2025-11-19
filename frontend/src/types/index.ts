@@ -90,3 +90,65 @@ export interface PresetInfo {
   name: string;
   description: string;
 }
+
+export interface ActualData {
+  month: number;
+  central_total_kWh?: number;
+  local_total_kWh?: number;
+  total_kWh?: number;
+}
+
+export interface ComparisonMetrics {
+  rmse: number;
+  mae: number;
+  mape: number;
+  r_squared: number;
+  max_error: number;
+  max_error_month: number;
+}
+
+export interface ComparisonRequest {
+  floor_spec: FloorSpec;
+  equipment_spec: EquipmentSpec;
+  monthly_conditions: MonthlyCondition[];
+  actual_data: ActualData[];
+  comparison_target: string;
+}
+
+export interface ComparisonResponse {
+  simulation_results: SimulationResult[];
+  actual_data: ActualData[];
+  metrics: ComparisonMetrics;
+  comparison_target: string;
+}
+
+export interface ParameterRange {
+  parameter_name: string;
+  min_value: number;
+  max_value: number;
+  step?: number;
+  num_steps: number;
+}
+
+export interface CalibrationRequest {
+  floor_spec: FloorSpec;
+  equipment_spec: EquipmentSpec;
+  monthly_conditions: MonthlyCondition[];
+  actual_data: ActualData[];
+  comparison_target: string;
+  parameter_ranges: ParameterRange[];
+  method: 'grid' | 'optimize';
+}
+
+export interface CalibrationResult {
+  parameters: Record<string, number>;
+  metrics: ComparisonMetrics;
+  simulation_results?: SimulationResult[];
+}
+
+export interface CalibrationResponse {
+  best_result: CalibrationResult;
+  all_results: CalibrationResult[];
+  method: string;
+  iterations: number;
+}
