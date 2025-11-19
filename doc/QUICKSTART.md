@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 ```bash
 # Streamlitアプリの起動
-streamlit run app.py
+streamlit run src/app.py
 ```
 
 ブラウザが自動的に開きます（通常 http://localhost:8501）
@@ -36,7 +36,7 @@ streamlit run app.py
 
 ```bash
 # サンプルスクリプトの実行
-python sample_run.py
+python src/sample_run.py
 ```
 
 以下のファイルが生成されます：
@@ -48,7 +48,7 @@ python sample_run.py
 
 ```bash
 # テストの実行
-python test_building_energy_model.py
+python src/test_building_energy_model.py
 ```
 
 すべてのテストが成功すれば正常に動作しています。
@@ -56,15 +56,21 @@ python test_building_energy_model.py
 ## 📁 ファイル構成
 
 ```
-building-energy-simulation/
-├── app.py                        # メインアプリケーション（Streamlit）
-├── building_energy_model.py      # 計算エンジン
-├── presets.py                    # プリセット設定
-├── test_building_energy_model.py # テストコード
-├── sample_run.py                 # サンプル実行スクリプト
-├── requirements.txt              # 依存パッケージ
+ccw-hvac_model/
 ├── README.md                     # 詳細ドキュメント
-└── USER_MANUAL.md                # ユーザーマニュアル
+├── requirements.txt              # 依存パッケージ
+├── pyproject.toml                # プロジェクト設定
+├── .gitignore                    # Git除外設定
+├── src/                          # ソースコードディレクトリ
+│   ├── app.py                    # メインアプリケーション（Streamlit）
+│   ├── building_energy_model.py  # 計算エンジン
+│   ├── presets.py                # プリセット設定
+│   ├── sample_run.py             # サンプル実行スクリプト
+│   └── test_building_energy_model.py # テストコード
+├── doc/                          # ドキュメント
+│   ├── QUICKSTART.md             # このファイル
+│   └── USER_MANUAL.md            # ユーザーマニュアル
+└── config/                       # 設定・結果ファイル（自動作成）
 ```
 
 ## 💡 便利な機能
@@ -97,7 +103,7 @@ pip install -r requirements.txt --upgrade
 
 ```bash
 # 別のポートで起動
-streamlit run app.py --server.port 8502
+streamlit run src/app.py --server.port 8502
 ```
 
 ## 📖 詳細情報
@@ -105,7 +111,7 @@ streamlit run app.py --server.port 8502
 より詳しい情報は以下をご覧ください：
 
 - **README.md**: 技術仕様、モデル詳細
-- **USER_MANUAL.md**: 詳細な操作方法、用語集
+- **doc/USER_MANUAL.md**: 詳細な操作方法、用語集
 
 ## 🎯 主な機能
 

@@ -66,7 +66,7 @@
 1. **リポジトリのクローン**
 ```bash
 git clone <repository-url>
-cd building-energy-simulation
+cd ccw-hvac_model
 ```
 
 2. **仮想環境の作成（推奨）**
@@ -85,7 +85,7 @@ pip install -r requirements.txt
 ### アプリケーションの起動
 
 ```bash
-streamlit run app.py
+streamlit run src/app.py
 ```
 
 ブラウザが自動的に開き、アプリケーションが表示されます（通常は http://localhost:8501）。
@@ -218,7 +218,7 @@ streamlit run app.py
 ### テストの実行
 
 ```bash
-python test_building_energy_model.py
+python src/test_building_energy_model.py
 ```
 
 ### テスト内容
@@ -265,36 +265,56 @@ python test_building_energy_model.py
 ## 📁 ファイル構成
 
 ```
-building-energy-simulation/
-├── app.py                          # メインアプリケーション
-├── building_energy_model.py        # コアモデルロジック
-├── presets.py                      # プリセット設定
-├── test_building_energy_model.py   # テストコード
-├── requirements.txt                # 依存パッケージ
+ccw-hvac_model/
 ├── README.md                       # このファイル
-└── configs/                        # 保存された設定ファイル（自動作成）
+├── requirements.txt                # 依存パッケージ
+├── pyproject.toml                  # プロジェクト設定
+├── .gitignore                      # Git除外設定
+├── src/                            # ソースコードディレクトリ
+│   ├── app.py                      # メインアプリケーション
+│   ├── building_energy_model.py    # コアモデルロジック
+│   ├── presets.py                  # プリセット設定
+│   ├── sample_run.py               # サンプル実行スクリプト
+│   └── test_building_energy_model.py # テストコード
+├── doc/                            # ドキュメント
+│   ├── QUICKSTART.md               # クイックスタートガイド
+│   └── USER_MANUAL.md              # ユーザーマニュアル
+└── config/                         # 設定・結果ファイル（自動作成）
 ```
 
 ### 各ファイルの説明
 
-**app.py**
+**src/app.py**
 - Streamlitベースのユーザーインターフェース
 - 設定編集、シミュレーション実行、結果表示、データ保存
 
-**building_energy_model.py**
+**src/building_energy_model.py**
 - データクラス（FloorSpec, EquipmentSpec, MonthlyCondition）
 - 計算クラス（PsychrometricCalculator, HeatLoadCalculator, HVACSystemModel）
 - 統合クラス（BuildingEnergyModel）
 
-**presets.py**
+**src/presets.py**
 - 最新オフィスのプリセット設定
 - 旧式オフィスのプリセット設定
 - デフォルトの月別運用条件
 
-**test_building_energy_model.py**
+**src/sample_run.py**
+- コマンドラインからの実行例
+- 結果の処理とCSV出力
+- プリセット設定の利用例
+
+**src/test_building_energy_model.py**
 - 各機能のユニットテスト
 - 統合テスト
 - エネルギーバランステスト
+
+**doc/QUICKSTART.md**
+- クイックスタートガイド
+- 3ステップでの使用方法
+
+**doc/USER_MANUAL.md**
+- 詳細なユーザーマニュアル
+- 機能説明、FAQ
 
 ## 📊 技術仕様
 
