@@ -1,0 +1,60 @@
+import axios from 'axios';
+import type {
+  SimulationRequest,
+  SimulationResponse,
+  PresetResponse,
+  PresetInfo,
+} from '../types';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const simulationApi = {
+  /**
+   * Run simulation with custom settings
+   */
+  runSimulation: async (request: SimulationRequest): Promise<SimulationResponse> => {
+    const response = await apiClient.post<SimulationResponse>('/simulate', request);
+    return response.data;
+  },
+
+  /**
+   * Get modern office preset
+   */
+  getModernPreset: async (): Promise<PresetResponse> => {
+    const response = await apiClient.get<PresetResponse>('/presets/modern');
+    return response.data;
+  },
+
+  /**
+   * Get old office preset
+   */
+  getOldPreset: async (): Promise<PresetResponse> => {
+    const response = await apiClient.get<PresetResponse>('/presets/old');
+    return response.data;
+  },
+
+  /**
+   * List available presets
+   */
+  listPresets: async (): Promise<{ presets: PresetInfo[] }> => {
+    const response = await apiClient.get<{ presets: PresetInfo[] }>('/presets');
+    return response.data;
+  },
+
+  /**
+   * Health check
+   */
+  healthCheck: async (): Promise<{ status: string }> => {
+    const response = await apiClient.get<{ status: string }>('/health');
+    return response.data;
+  },
+};
+
+export default apiClient;
